@@ -1,0 +1,50 @@
+body {
+    background: #f1f4fb;
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    display: flex;
+    justify-content: center;
+    padding-top: 20px;
+}
+
+#menu {
+    text-align: center;
+}
+
+#menu button {
+    display: block;
+    width: 260px;
+    margin: 10px auto;
+    padding: 14px;
+    background: #6d8cff;
+    border: none;
+    color: white;
+    font-size: 18px;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+canvas {
+    display: none;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 0 14px rgba(0,0,0,0.15);
+}
+
+/* Мобильные кнопки */
+#controls {
+    display: none;
+    text-align: center;
+    margin-top: 20px;
+}
+
+#controls button {
+    width: 70px;
+    height: 70px;
+    font-size: 30px;
+    border: none;
+    background: #6d8cff;
+    color: white;
+    border-radius: 14px;
+    margin: 6px;
+}

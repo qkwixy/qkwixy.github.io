@@ -1,32 +1,28 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mini Games</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Мини-игры</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-
+<h1>Мини-игры</h1>
 <div id="menu">
-    <h1>Мини-Игры</h1>
-    <button onclick="startGame(1)">1. Лабиринт цветов</button>
-    <button onclick="startGame(2)">2. Слияние цифр</button>
-    <button onclick="startGame(3)">3. Три в ряд</button>
+  <button onclick="startGame('maze')">Лабиринт чисел</button>
+  <button onclick="startGame('wire')">Логическая головоломка</button>
+  <button onclick="startGame('match3')">Три в ряд</button>
 </div>
 
-<canvas id="gameCanvas" width="420" height="620"></canvas>
-
-<!-- Мобильные стрелки -->
-<div id="controls">
-    <div class="row">
-        <button onclick="moveMobile('up')">▲</button>
-    </div>
-    <div class="row">
-        <button onclick="moveMobile('left')">◀</button>
-        <button onclick="moveMobile('down')">▼</button>
-        <button onclick="moveMobile('right')">▶</button>
-    </div>
+<div id="gameContainer" style="display:none;">
+  <div id="panel"></div>
+  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  <div id="mobileControls">
+    <button onclick="moveMaze('up')">↑</button><br>
+    <button onclick="moveMaze('left')">←</button>
+    <button onclick="moveMaze('down')">↓</button>
+    <button onclick="moveMaze('right')">→</button>
+  </div>
+  <button onclick="backToMenu()">Назад в меню</button>
 </div>
 
 <script src="script.js"></script>

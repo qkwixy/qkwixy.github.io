@@ -4,329 +4,363 @@
 <meta charset="UTF-8">
 <title>Мини-игры</title>
 <style>
-body { text-align:center; font-family: Arial, sans-serif; background:#f0f4f8; margin:0; }
-h1 { margin-top:20px; color:#333; }
-button { margin:10px; padding:12px 25px; font-size:18px; border-radius:12px; cursor:pointer; background:#e0e0e0; border:none; transition:0.2s; }
-button:hover { background:#d0d0d0; }
-canvas { background:#ffffff; border-radius:15px; display:block; margin:20px auto; }
-#panel { display:flex; justify-content:space-between; width:90%; max-width:500px; margin:0 auto; font-size:18px; }
+body {
+    margin:0; text-align:center; font-family: Arial, sans-serif; background:#f0f0f0;
+}
+button {
+    margin:10px; padding:12px 25px; font-size:18px;
+    border-radius:12px; cursor:pointer; background:#e0e0e0; border:none;
+}
+canvas {
+    background:#f7f7f7; border-radius:15px; display:block; margin:20px auto;
+    touch-action: none;
+}
+#panel {
+    display:flex; justify-content:space-between;
+    width:500px; margin:0 auto; font-size:18px;
+}
 #panel div { flex:1; text-align:center; }
-.controls { margin:10px; }
-.controls button { width:50px; height:50px; font-size:24px; margin:5px; }
 </style>
 </head>
 <body>
 <h1>Мини-игры</h1>
+
 <div id="menu">
-  <button onclick="startGame('maze')">Лабиринт чисел</button>
-  <button onclick="startGame('wire')">Логическая головоломка</button>
-  <button onclick="startGame('match3')">Три в ряд</button>
+    <button onclick="startGame('maze')">Лабиринт чисел</button>
+    <button onclick="startGame('wire')">Логическая головоломка</button>
+    <button onclick="startGame('match3')">Три в ряд</button>
 </div>
 
 <div id="gameContainer" style="display:none;">
-  <div id="panel"></div>
-  <canvas id="gameCanvas" width="500" height="500"></canvas>
-  <div class="controls" id="mobileControls" style="display:none;">
-    <button onclick="moveMaze(0,-1)">↑</button><br>
-    <button onclick="moveMaze(-1,0)">←</button>
-    <button onclick="moveMaze(1,0)">→</button><br>
-    <button onclick="moveMaze(0,1)">↓</button>
-  </div>
-  <button onclick="backToMenu()">Назад в меню</button>
+    <div id="panel"></div>
+    <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <button onclick="backToMenu()">Назад в меню</button>
 </div>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const panel = document.getElementById('panel');
-const menu = document.getElementById('menu');
-const gameContainer = document.getElementById('gameContainer');
-const mobileControls = document.getElementById('mobileControls');
-
 let currentGame = null;
 let gameRunning = false;
 
-// ======== Цвета ========
 const PASTEL_COLORS = ['#FF9AA2','#AFCBFF','#B9FFB0','#FFF3B0'];
 const TILE_BG = '#ffffff';
 const TILE_BORDER = '#cccccc';
 
 // ======== Главное меню ========
-function backToMenu(){
-  menu.style.display='block';
-  gameContainer.style.display='none';
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  panel.innerHTML='';
-  currentGame = null;
-  gameRunning=false;
-  document.onkeydown = null;
-  canvas.onclick = null;
-  mobileControls.style.display='none';
+function backToMenu() {
+    gameRunning = false;
+    currentGame = null;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    panel.innerHTML = '';
+    document.onkeydown = null;
+    canvas.onclick = null;
+    canvas.ontouchstart = null;
+    document.getElementById('menu').style.display = 'block';
+    document.getElementById('gameContainer').style.display = 'none';
 }
 
-// ===================== ИГРА 1: ЛАБИРИНТ ЧИСЕЛ =====================
-let maze = {};
-function createMazeGame(){
-  const SIZE=5, TILE=80;
-  let level=1;
-  let grid=[], playerPos=[], finish=[], targetSum=0, currentSum=0, bonusCells={};
+// ======== Игра 1: Лабиринт чисел ========
+function createMazeGame() {
+    const SIZE = 5, TILE = 80;
+    let level = 1;
+    let grid = [], playerPos = [], finish = [], targetSum = 0, currentSum = 0, bonusCells = {};
 
-  function newLevel(){
-    grid = [];
-    for(let y=0;y<SIZE;y++){
-      let row=[];
-      for(let x=0;x<SIZE;x++) row.push(Math.floor(Math.random()*9)+1);
-      grid.push(row);
-    }
-    playerPos=[0,Math.floor(SIZE/2)];
-    finish=[SIZE-1,Math.floor(SIZE/2)];
-    grid[playerPos[1]][playerPos[0]]=0;
-    grid[finish[1]][finish[0]]=0;
-
-    targetSum=Math.floor(Math.random()*(25-15+1))+15+level*2;
-    currentSum=0;
-
-    bonusCells={};
-    for(let i=0;i<2;i++){
-      let bx=Math.floor(Math.random()*SIZE), by=Math.floor(Math.random()*SIZE);
-      if(!(bx==playerPos[0] && by==playerPos[1]) && !(bx==finish[0] && by==finish[1]))
-        bonusCells[`${bx},${by}`]=Math.floor(Math.random()*2)+1;
-    }
-    draw();
-  }
-
-  function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.font='20px Arial';
-    for(let y=0;y<SIZE;y++){
-      for(let x=0;x<SIZE;x++){
-        let rectX=x*TILE, rectY=y*TILE;
-        ctx.fillStyle=TILE_BG;
-        if(x==playerPos[0] && y==playerPos[1]) ctx.fillStyle='#A3E4D7';
-        else if(x==finish[0] && y==finish[1]) ctx.fillStyle='#F7DC6F';
-        else if(bonusCells[`${x},${y}`]) ctx.fillStyle='#F5B7B1';
-        roundRect(ctx, rectX, rectY, TILE-2, TILE-2, 12, true, true);
-        ctx.strokeStyle=TILE_BORDER;
-        ctx.strokeRect(rectX, rectY, TILE-2, TILE-2);
-
-        if(grid[y][x]!=0){
-          ctx.fillStyle='black';
-          ctx.textAlign='center';
-          ctx.textBaseline='middle';
-          ctx.fillText(grid[y][x], rectX+TILE/2-1, rectY+TILE/2-1);
+    function newLevel() {
+        grid = [];
+        for (let y = 0; y < SIZE; y++) {
+            let row = [];
+            for (let x = 0; x < SIZE; x++) row.push(Math.floor(Math.random() * 9) + 1);
+            grid.push(row);
         }
-        if(bonusCells[`${x},${y}`]){
-          ctx.fillStyle='black';
-          ctx.fillText('+'+bonusCells[`${x},${y}`], rectX+TILE/2-1, rectY+TILE/2+20);
+        playerPos = [0, Math.floor(SIZE / 2)];
+        finish = [SIZE - 1, Math.floor(SIZE / 2)];
+        grid[playerPos[1]][playerPos[0]] = 0;
+        grid[finish[1]][finish[0]] = 0;
+
+        targetSum = Math.floor(Math.random() * (25 - 15 + 1)) + 15 + level * 2;
+        currentSum = 0;
+
+        bonusCells = {};
+        for (let i = 0; i < 2; i++) {
+            let bx = Math.floor(Math.random() * SIZE), by = Math.floor(Math.random() * SIZE);
+            if (!(bx === playerPos[0] && by === playerPos[1]) && !(bx === finish[0] && by === finish[1]))
+                bonusCells[`${bx},${by}`] = Math.floor(Math.random() * 2) + 1;
         }
-      }
+        draw();
     }
-    panel.innerHTML=`<div>Сумма: ${currentSum}/${targetSum}</div><div>Уровень: ${level}</div>`;
-  }
 
-  function move(dx,dy){
-    let nx=playerPos[0]+dx, ny=playerPos[1]+dy;
-    if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE){
-      let key=`${nx},${ny}`;
-      let val=grid[ny][nx];
-      if(bonusCells[key]) { val*=bonusCells[key]; delete bonusCells[key]; }
-      if(currentSum+val<=targetSum){
-        playerPos=[nx,ny]; currentSum+=val;
-      }
-      if(nx==finish[0] && ny==finish[1]){
-        if(currentSum==targetSum){ level++; newLevel(); }
-        else { currentSum=0; playerPos=[0,Math.floor(SIZE/2)]; }
-      }
-      draw();
-    }
-  }
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let y = 0; y < SIZE; y++) {
+            for (let x = 0; x < SIZE; x++) {
+                let rectX = x * TILE, rectY = y * TILE;
+                ctx.fillStyle = TILE_BG;
+                if (x === playerPos[0] && y === playerPos[1]) ctx.fillStyle = '#A3E4D7';
+                else if (x === finish[0] && y === finish[1]) ctx.fillStyle = '#F7DC6F';
+                else if (bonusCells[`${x},${y}`]) ctx.fillStyle = '#F5B7B1';
+                roundRect(ctx, rectX, rectY, TILE - 2, TILE - 2, 12, true, true);
+                ctx.strokeStyle = TILE_BORDER;
+                ctx.strokeRect(rectX, rectY, TILE - 2, TILE - 2);
 
-  document.onkeydown = function(e){
-    if(e.key=='ArrowUp') move(0,-1);
-    else if(e.key=='ArrowDown') move(0,1);
-    else if(e.key=='ArrowLeft') move(-1,0);
-    else if(e.key=='ArrowRight') move(1,0);
-  }
-
-  maze.move = move;
-  newLevel();
-}
-
-function moveMaze(dx,dy){
-  if(maze.move) maze.move(dx,dy);
-}
-
-// ===================== ИГРА 2: ЛОГИЧЕСКАЯ ГОЛОВОЛОМКА =====================
-function createWireGame(){
-  const ROWS=6,COLS=6,TILE=70;
-  let grid=[], level=1;
-  const source=[0,Math.floor(ROWS/2)], target=[COLS-1,Math.floor(ROWS/2)];
-
-  function newLevel(){
-    grid=[];
-    for(let y=0;y<ROWS;y++){
-      let row=[];
-      for(let x=0;x<COLS;x++) row.push('empty');
-      grid.push(row);
-    }
-    grid[source[1]][source[0]]='source';
-    grid[target[1]][target[0]]='target';
-    for(let i=0;i<8;i++){
-      let x=Math.floor(Math.random()*(COLS-2))+1;
-      let y=Math.floor(Math.random()*ROWS);
-      if((x!=source[0]||y!=source[1])&&(x!=target[0]||y!=target[1])) grid[y][x]='block';
-    }
-    draw();
-  }
-
-  function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    for(let y=0;y<ROWS;y++){
-      for(let x=0;x<COLS;x++){
-        let rectX=x*TILE, rectY=y*TILE;
-        let color='#D5DBDB';
-        if(grid[y][x]=='source') color='#A3E4D7';
-        else if(grid[y][x]=='target') color='#F7DC6F';
-        else if(grid[y][x]=='wire') color='#AFCBFF';
-        else if(grid[y][x]=='block') color='#F5B7B1';
-        roundRect(ctx, rectX, rectY, TILE-2, TILE-2, 12, true, true);
-        ctx.strokeStyle=TILE_BORDER;
-        ctx.strokeRect(rectX, rectY, TILE-2, TILE-2);
-      }
-    }
-    panel.innerHTML=`<div>Уровень: ${level}</div>`;
-  }
-
-  canvas.onclick = function(e){
-    const rect = canvas.getBoundingClientRect();
-    const x=Math.floor((e.clientX-rect.left)/TILE);
-    const y=Math.floor((e.clientY-rect.top)/TILE);
-    if(x>=0 && x<COLS && y>=0 && y<ROWS){
-      if(grid[y][x]=='empty') grid[y][x]='wire';
-      else if(grid[y][x]=='wire') grid[y][x]='empty';
-      draw();
-      if(checkConnection()){ level++; newLevel(); }
-    }
-  };
-
-  function checkConnection(){
-    let visited=Array.from({length:ROWS},()=>Array(COLS).fill(false));
-    let queue=[[...source]];
-    while(queue.length>0){
-      let [cx,cy]=queue.shift();
-      if(cx==target[0] && cy==target[1]) return true;
-      [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{
-        let nx=cx+dx, ny=cy+dy;
-        if(nx>=0 && nx<COLS && ny>=0 && ny<ROWS && !visited[ny][nx] && (grid[ny][nx]=='wire'||grid[ny][nx]=='target')){
-          visited[ny][nx]=true;
-          queue.push([nx,ny]);
-        }
-      });
-    }
-    return false;
-  }
-
-  newLevel();
-}
-
-// ===================== ИГРА 3: ТРИ В РЯД =====================
-function createMatch3Game(){
-  const ROWS=7,COLS=7,TILE=52;
-  let grid=[], score=0, level=1, target_score=20, selected=null;
-
-  function initGrid(){
-    grid=[];
-    for(let y=0;y<ROWS;y++){
-      let row=[];
-      for(let x=0;x<COLS;x++) row.push(Math.floor(Math.random()*PASTEL_COLORS.length));
-      grid.push(row);
-    }
-  }
-  initGrid();
-
-  function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle = "#2a3457";
-    ctx.font = "24px Arial";
-    ctx.fillText("Три в ряд", canvas.width/2, 30);
-    ctx.textAlign='center';
-    const colors = ["#ff7777","#77ff77","#7777ff","#ffaa44"];
-    for (let i=0;i<ROWS;i++){
-      for (let j=0;j<COLS;j++){
-        ctx.fillStyle = colors[grid[i][j]];
-        ctx.fillRect(40 + j*TILE, 60 + i*TILE, TILE-4, TILE-4);
-      }
-    }
-    panel.innerHTML=`<div>Счет: ${score}</div><div>Уровень: ${level}</div><div>Цель: ${target_score}</div>`;
-    if(currentGame===3) requestAnimationFrame(draw);
-  }
-
-  canvas.onclick = function(e){
-    const rect = canvas.getBoundingClientRect();
-    const x=Math.floor((e.clientX-rect.left-40)/TILE);
-    const y=Math.floor((e.clientY-rect.top-60)/TILE);
-    if(x>=0 && x<COLS && y>=0 && y<ROWS){
-      if(!selected) selected=[x,y];
-      else{
-        if(Math.abs(selected[0]-x)+Math.abs(selected[1]-y)==1){
-          [grid[selected[1]][selected[0]], grid[y][x]]=[grid[y][x], grid[selected[1]][selected[0]]];
-          let removed=true;
-          while(removed){
-            removed=false;
-            for(let y1=0;y1<ROWS;y1++){
-              for(let x1=0;x1<COLS-2;x1++){
-                if(grid[y1][x1]==grid[y1][x1+1] && grid[y1][x1]==grid[y1][x1+2]){
-                  grid[y1][x1]=grid[y1][x1+1]=grid[y1][x1+2]=Math.floor(Math.random()*PASTEL_COLORS.length);
-                  score++;
-                  removed=true;
+                if (grid[y][x] !== 0) {
+                    ctx.fillStyle = 'black';
+                    ctx.font = '20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(grid[y][x], rectX + TILE / 2 - 1, rectY + TILE / 2 - 1);
                 }
-              }
-            }
-          }
-        }
-        selected=null;
-      }
-      if(score>=target_score){ level++; target_score+=20+level*10; initGrid(); }
-    }
-  }
 
-  draw();
+                if (bonusCells[`${x},${y}`]) {
+                    ctx.fillStyle = 'black';
+                    ctx.font = '16px Arial';
+                    ctx.fillText('+' + bonusCells[`${x},${y}`], rectX + TILE / 2 - 1, rectY + TILE / 2 + 20);
+                }
+            }
+        }
+        panel.innerHTML = `<div>Сумма: ${currentSum}/${targetSum}</div><div>Уровень: ${level}</div>`;
+    }
+
+    function move(dx, dy) {
+        let nx = playerPos[0] + dx, ny = playerPos[1] + dy;
+        if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
+            let key = `${nx},${ny}`;
+            let val = grid[ny][nx];
+            if (bonusCells[key]) { val *= bonusCells[key]; delete bonusCells[key]; }
+            if (currentSum + val <= targetSum) {
+                playerPos = [nx, ny]; currentSum += val;
+            }
+            if (nx === finish[0] && ny === finish[1]) {
+                if (currentSum === targetSum) { level++; newLevel(); }
+                else { currentSum = 0; playerPos = [0, Math.floor(SIZE / 2)]; }
+            }
+            draw();
+        }
+    }
+
+    document.onkeydown = e => {
+        if (e.key === 'ArrowUp') move(0, -1);
+        else if (e.key === 'ArrowDown') move(0, 1);
+        else if (e.key === 'ArrowLeft') move(-1, 0);
+        else if (e.key === 'ArrowRight') move(1, 0);
+    };
+    canvas.ontouchstart = e => {
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        const px = playerPos[0] * TILE + TILE/2;
+        const py = playerPos[1] * TILE + TILE/2;
+        const dx = x - px;
+        const dy = y - py;
+        if (Math.abs(dx) > Math.abs(dy)) move(dx>0?1:-1,0);
+        else move(0, dy>0?1:-1);
+    };
+
+    newLevel();
+}
+
+// ======== Игра 2: Логическая головоломка ========
+function createWireGame() {
+    const ROWS = 6, COLS = 6, TILE = 70;
+    let grid = [], level = 1;
+    const source = [0, Math.floor(ROWS/2)], target = [COLS-1, Math.floor(ROWS/2)];
+
+    function newLevel() {
+        grid = Array.from({length: ROWS}, () => Array(COLS).fill('empty'));
+        grid[source[1]][source[0]] = 'source';
+        grid[target[1]][target[0]] = 'target';
+        for (let i = 0; i < 10; i++) {
+            let x = Math.floor(Math.random()*(COLS-2))+1;
+            let y = Math.floor(Math.random()*ROWS);
+            if ((x !== source[0] || y !== source[1]) && (x !== target[0] || y !== target[1]))
+                grid[y][x] = 'block';
+        }
+        draw();
+    }
+
+    function draw() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        for (let y=0; y<ROWS; y++) {
+            for (let x=0; x<COLS; x++) {
+                let rectX = x*TILE, rectY = y*TILE;
+                ctx.fillStyle = '#D5DBDB';
+                if (grid[y][x] === 'source') ctx.fillStyle = '#A3E4D7';
+                else if (grid[y][x] === 'target') ctx.fillStyle = '#F7DC6F';
+                else if (grid[y][x] === 'wire') ctx.fillStyle = '#AFCBFF';
+                else if (grid[y][x] === 'block') ctx.fillStyle = '#F5B7B1';
+                roundRect(ctx, rectX, rectY, TILE-2, TILE-2, 12, true, true);
+                ctx.strokeStyle = TILE_BORDER;
+                ctx.strokeRect(rectX, rectY, TILE-2, TILE-2);
+            }
+        }
+        panel.innerHTML = `<div>Уровень: ${level}</div>`;
+    }
+
+    function checkConnection() {
+        let visited = Array.from({length: ROWS}, () => Array(COLS).fill(false));
+        let queue = [[...source]];
+        while(queue.length) {
+            let [cx,cy] = queue.shift();
+            if(cx===target[0] && cy===target[1]) return true;
+            [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{
+                let nx=cx+dx, ny=cy+dy;
+                if(nx>=0 && nx<COLS && ny>=0 && ny<ROWS && !visited[ny][nx] &&
+                  (grid[ny][nx]==='wire'||grid[ny][nx]==='target')) {
+                    visited[ny][nx] = true;
+                    queue.push([nx,ny]);
+                }
+            });
+        }
+        return false;
+    }
+
+    canvas.onclick = canvas.ontouchstart = e => {
+        let x, y;
+        if(e.type==='touchstart') {
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            x = Math.floor((touch.clientX - rect.left)/TILE);
+            y = Math.floor((touch.clientY - rect.top)/TILE);
+        } else {
+            const rect = canvas.getBoundingClientRect();
+            x = Math.floor((e.clientX - rect.left)/TILE);
+            y = Math.floor((e.clientY - rect.top)/TILE);
+        }
+        if(grid[y][x]==='empty') grid[y][x]='wire';
+        else if(grid[y][x]==='wire') grid[y][x]='empty';
+        draw();
+        if(checkConnection()){ level++; newLevel(); }
+    };
+
+    newLevel();
+}
+
+// ======== Игра 3: Три в ряд ========
+function createMatch3Game() {
+    const ROWS = 7, COLS = 7, TILE = 52;
+    let grid = [], score = 0, level = 1, targetScore = 50, selected = null;
+
+    function initGrid() {
+        grid = [];
+        for(let i=0;i<ROWS;i++){
+            grid.push([]);
+            for(let j=0;j<COLS;j++){
+                grid[i].push(Math.floor(Math.random()*4));
+            }
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle="#2a3457";
+        ctx.font="28px Segoe UI";
+        ctx.fillText("Три в ряд", 150, 40);
+        const colors = ["#ff7777","#77ff77","#7777ff","#ffaa44"];
+        for(let i=0;i<ROWS;i++){
+            for(let j=0;j<COLS;j++){
+                ctx.fillStyle=colors[grid[i][j]];
+                ctx.fillRect(40 + j*TILE, 80 + i*TILE, TILE-4, TILE-4);
+                ctx.strokeStyle = TILE_BORDER;
+                ctx.strokeRect(40 + j*TILE, 80 + i*TILE, TILE-4, TILE-4);
+            }
+        }
+        panel.innerHTML = `<div>Счет: ${score}</div><div>Уровень: ${level}</div><div>Цель: ${targetScore}</div>`;
+    }
+
+    function swap(x1,y1,x2,y2){
+        [grid[y1][x1], grid[y2][x2]] = [grid[y2][x2], grid[y1][x1]];
+    }
+
+    function checkMatches(){
+        let removed=false;
+        const colors = 4;
+        for(let i=0;i<ROWS;i++){
+            for(let j=0;j<COLS-2;j++){
+                if(grid[i][j]===grid[i][j+1] && grid[i][j]===grid[i][j+2]){
+                    grid[i][j]=grid[i][j+1]=grid[i][j+2]=Math.floor(Math.random()*colors);
+                    score++;
+                    removed=true;
+                }
+            }
+        }
+        for(let j=0;j<COLS;j++){
+            for(let i=0;i<ROWS-2;i++){
+                if(grid[i][j]===grid[i+1][j] && grid[i][j]===grid[i+2][j]){
+                    grid[i][j]=grid[i+1][j]=grid[i+2][j]=Math.floor(Math.random()*colors);
+                    score++;
+                    removed=true;
+                }
+            }
+        }
+        return removed;
+    }
+
+    canvas.onclick = canvas.ontouchstart = e => {
+        let x, y;
+        if(e.type==='touchstart'){
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            x = Math.floor((touch.clientX - rect.left - 40)/TILE);
+            y = Math.floor((touch.clientY - rect.top - 80)/TILE);
+        } else {
+            const rect = canvas.getBoundingClientRect();
+            x = Math.floor((e.clientX - rect.left - 40)/TILE);
+            y = Math.floor((e.clientY - rect.top - 80)/TILE);
+        }
+        if(x<0||x>=COLS||y<0||y>=ROWS) return;
+        if(!selected) selected=[x,y];
+        else {
+            if(Math.abs(selected[0]-x)+Math.abs(selected[1]-y)===1){
+                swap(selected[0],selected[1],x,y);
+                while(checkMatches()){}
+            }
+            selected=null;
+        }
+        if(score>=targetScore){ level++; targetScore+=50+level*10; score=0; initGrid(); }
+    };
+
+    function loop(){
+        if(currentGame!==3) return;
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    initGrid();
+    loop();
 }
 
 // ======== Вспомогательная функция ========
-function roundRect(ctx, x, y, w, h, r, fill, stroke){
-  if(typeof stroke==='undefined') stroke=true;
-  if(typeof r==='undefined') r=5;
-  if(typeof fill==='undefined') fill=true;
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.lineTo(x+w-r,y);
-  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r);
-  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h);
-  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r);
-  ctx.quadraticCurveTo(x,y,x+r,y);
-  ctx.closePath();
-  if(fill) ctx.fill();
-  if(stroke) ctx.stroke();
+function roundRect(ctx, x, y, w, h, r, fill=true, stroke=true){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+    if(fill) ctx.fill();
+    if(stroke) ctx.stroke();
 }
 
-// ======== Запуск игры ========
+// ======== Старт игры ========
 function startGame(name){
-  document.onkeydown = null;
-  canvas.onclick = null;
-  currentGame = (name==='maze')?1:(name==='wire')?2:3;
-  gameRunning=true;
+    gameRunning = true;
+    document.onkeydown = null;
+    canvas.onclick = null;
+    canvas.ontouchstart = null;
 
-  if(name==='maze'){ createMazeGame(); mobileControls.style.display='block'; }
-  else mobileControls.style.display='none';
-  if(name==='wire') createWireGame();
-  if(name==='match3') createMatch3Game();
+    if(name==='maze') currentGame=1, createMazeGame();
+    else if(name==='wire') currentGame=2, createWireGame();
+    else if(name==='match3') currentGame=3, createMatch3Game();
 
-  menu.style.display='none';
-  gameContainer.style.display='block';
+    document.getElementById('menu').style.display='none';
+    document.getElementById('gameContainer').style.display='block';
 }
 </script>
 </body>
